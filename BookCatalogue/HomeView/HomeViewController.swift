@@ -45,7 +45,7 @@ class HomeViewController: UIViewController {
     }
     
     @objc func collectionButtonTapped() {
-        viewModel.lookupBook(isbn: "")
+        
     }
     
     @objc func scanButtonTapped() {
@@ -118,7 +118,11 @@ extension HomeViewController: DataScannerViewControllerDelegate {
     private func process(data: String) {
         
         dismiss(animated: true)
-        self.viewModel.lookupBook(isbn: data)
+        self.viewModel.lookupBook(isbn: data) { book, networkError in
+            DispatchQueue.main.async {
+                self.finishedLookingUpBook(book: book, error: networkError)
+            }
+        }
     }
 }
 
