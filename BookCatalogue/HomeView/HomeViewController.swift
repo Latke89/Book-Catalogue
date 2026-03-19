@@ -131,7 +131,7 @@ extension HomeViewController: HomeViewModelDelegate {
         if let book {
             let alertViewController = UIAlertController(title: nil, message: "Is your book \(book.title)?", preferredStyle: .alert)
             let positiveAction = UIAlertAction(title: "Yes", style: .default) { _ in
-                /// completion handler to add to memory later
+                self.viewModel.retrieveBookData()
             }
             let negativeAction = UIAlertAction(title: "No", style: .destructive)
             alertViewController.addAction(positiveAction)

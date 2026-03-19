@@ -5,6 +5,7 @@
 //  Created by Brett Gordon on 3/9/26.
 //
 import Foundation
+import UIKit
 
 protocol NetworkService {
     var apiClient: JWTAPIClient { get }
@@ -65,6 +66,50 @@ final class DummyJSONAPICleint: JWTAPIClient {
     }
 }
 
+final class CoverAPICleint: JWTAPIClient {
+    var baseURL: URL {
+        URL(string: "https://covers.openlibrary.org")!
+    }
+    
+    func request(from endpoint: any Endpoint, completion: @escaping(Result<Data?, NetworkError>) -> Void) -> URLSessionTask {
+        var url = baseURL
+        url.appendPathComponent(endpoint.path)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = endpoint.method.rawValue
+//        request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+                
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error {
+                completion(.failure(.dataTaskError(error)))
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(.systemError("Response is not an HTTPURLResponse")))
+                return
+            }
+            
+            guard 200..<299 ~= httpResponse.statusCode else {
+                completion(.failure(.httpError(httpResponse.statusCode)))
+                return
+            }
+            
+            guard let data else {
+                completion(.failure(.emptyData))
+                return
+            }
+            
+            completion(.success((data)))
+
+        }
+        
+        task.resume()
+        return task
+    }
+}
+
+
 
 enum HTTPMethod: String {
     case GET
@@ -114,6 +159,40 @@ extension BookService {
             return task
         }
     
+    func lookupAuthor(olid: String, completion: @escaping(Result<GetAuthorResponse, NetworkError>) -> Void) -> URLSessionTask {
+        let endpoint = GetAuthorEndpoint(olid: olid)
+        let task = apiClient.request(from: endpoint) { result in
+            switch result {
+            case .success(let data):
+                guard let data else {
+                    completion(.failure(.emptyData))
+                    return
+                }
+                
+                guard let userResponse = self.decodeAuthor(from: data) else {
+                    completion(.failure(.decodingError("Failed to decode GetAuthorResponse")))
+                    return
+                }
+                
+                completion(.success(userResponse))
+                
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+        return task
+    }
+            
+    private func decodeAuthor(from data: Data) -> GetAuthorResponse? {
+        do {
+            let decoder = JSONDecoder()
+            return try decoder.decode(GetAuthorResponse.self, from: data)
+        } catch {
+            print("Failed to decode author: \(error)")
+            return nil
+        }
+    }
+    
     private func decodeBook(from data: Data) -> GetISBNResponse? {
         do {
             let decoder = JSONDecoder()
@@ -122,5 +201,40 @@ extension BookService {
             print("Failed to decode book: \(error)")
             return nil
         }
+    }
+}
+
+final class CoverService: NetworkService {
+    var apiClient: JWTAPIClient
+    
+    init(apiClient: JWTAPIClient = CoverAPICleint()) {
+        self.apiClient = apiClient
+    }
+}
+extension CoverService {
+    func lookupByISBN(_ isbn: String, completion: @escaping(Result<UIImage, NetworkError>) -> Void) -> URLSessionTask {
+        let endpoint = GetCoverEndpoint(isbn: isbn)
+        let task = apiClient.request(from: endpoint) { result in
+            switch result {
+            case .success(let data):
+                guard let data = data else {
+                    completion(.failure(.emptyData))
+                    return
+                }
+                guard let coverResponse = self.createCover(from: data) else  {
+                    completion(.failure(.decodingError("Could not decode image")))
+                    return
+                }
+                completion(.success(coverResponse))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+        return task
+    }
+    
+    private func createCover(from data: Data) -> UIImage? {
+        let coverImage = UIImage(data: data)
+        return coverImage
     }
 }
