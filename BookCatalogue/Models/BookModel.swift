@@ -23,6 +23,3 @@ enum Status {
     case toRead
     case dnf
 }
-
-//Page Count?
-

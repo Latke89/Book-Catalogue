@@ -21,7 +21,6 @@ class HomeViewModel: HomeViewModelProtocol {
     private let apiClient: DummyJSONAPICleint
     var bookRequestTask: URLSessionTask? = nil
     var coverTask: URLSessionTask? = nil
-    var workTask: URLSessionTask? = nil
     var authorTask: URLSessionTask? = nil
     var book: GetISBNResponse?
     var isbn = ""
@@ -81,7 +80,6 @@ class HomeViewModel: HomeViewModelProtocol {
         let coverService = CoverService(apiClient: CoverAPICleint())
         let bookService = BookService(apiClient: DummyJSONAPICleint())
 
-//        group.enter()
         group.enter()
         group.enter()
         
