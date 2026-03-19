@@ -9,7 +9,7 @@ import UIKit
 
 protocol HomeViewModelProtocol {
     func lookupBook(isbn: String, completion: @escaping(GetISBNResponse?, NetworkError?) -> ())
-    func retrieveBookData(isbn: String, bookData: GetISBNResponse)
+    func retrieveBookData()
 }
 
 protocol HomeViewModelDelegate: AnyObject {
@@ -24,6 +24,7 @@ class HomeViewModel: HomeViewModelProtocol {
     var workTask: URLSessionTask? = nil
     var authorTask: URLSessionTask? = nil
     var book: GetISBNResponse?
+    var isbn = ""
     weak var delegate: HomeViewModelDelegate?
     
     init(apiClient: DummyJSONAPICleint = DummyJSONAPICleint()) {
@@ -56,7 +57,7 @@ class HomeViewModel: HomeViewModelProtocol {
     
     func getBookDetails(isbn: String) {
         let coverService = CoverService(apiClient: CoverAPICleint())
-
+        self.isbn = isbn
         coverTask = coverService.lookupByISBN(isbn) { [weak self] result in
             switch result {
             case .success(let response):
@@ -67,14 +68,13 @@ class HomeViewModel: HomeViewModelProtocol {
         }
     }
     
-    func retrieveBookData(isbn: String, bookData: GetISBNResponse) {
+    func retrieveBookData() {
         
         let group = DispatchGroup()
         var cover: UIImage?
-        var work: GetWorkResponse?
         var author: GetAuthorResponse?
         
-        guard let authors = bookData.authors else { return }
+        guard let bookData = book, let authors = bookData.authors else { return }
         let split = authors[0].key.components(separatedBy: "/")
         guard let olid = split.last else { return }
         
@@ -85,7 +85,7 @@ class HomeViewModel: HomeViewModelProtocol {
         group.enter()
         group.enter()
         
-        coverTask = coverService.lookupByISBN(isbn) { [weak self] result in
+        coverTask = coverService.lookupByISBN(self.isbn) { [weak self] result in
             switch result {
             case .success(let response):
                 cover = response
@@ -112,7 +112,7 @@ class HomeViewModel: HomeViewModelProtocol {
                              author: author.name,
                              genres: [],
                              image: cover,
-                             isbn: isbn,
+                             isbn: self.isbn,
                              status: .toRead,
                              owned: true,
                              pageCount: bookData.number_of_pages ?? 0)

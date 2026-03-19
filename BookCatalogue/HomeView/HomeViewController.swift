@@ -45,13 +45,7 @@ class HomeViewController: UIViewController {
     }
     
     @objc func collectionButtonTapped() {
-        let isbn = "9781250860958"
-        viewModel.lookupBook(isbn: isbn) { book, networkError in
-            DispatchQueue.main.async {
-                guard let book = book else { return }
-                self.viewModel.retrieveBookData(isbn: isbn, bookData: book)
-            }
-        }
+        
     }
     
     @objc func scanButtonTapped() {
@@ -137,7 +131,7 @@ extension HomeViewController: HomeViewModelDelegate {
         if let book {
             let alertViewController = UIAlertController(title: nil, message: "Is your book \(book.title)?", preferredStyle: .alert)
             let positiveAction = UIAlertAction(title: "Yes", style: .default) { _ in
-                /// completion handler to add to memory later
+                self.viewModel.retrieveBookData()
             }
             let negativeAction = UIAlertAction(title: "No", style: .destructive)
             alertViewController.addAction(positiveAction)
