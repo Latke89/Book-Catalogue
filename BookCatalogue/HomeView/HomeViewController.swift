@@ -45,7 +45,13 @@ class HomeViewController: UIViewController {
     }
     
     @objc func collectionButtonTapped() {
-        
+        let isbn = "9781250860958"
+        viewModel.lookupBook(isbn: isbn) { book, networkError in
+            DispatchQueue.main.async {
+                guard let book = book else { return }
+                self.viewModel.retrieveBookData(isbn: isbn, bookData: book)
+            }
+        }
     }
     
     @objc func scanButtonTapped() {
