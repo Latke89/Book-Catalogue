@@ -159,6 +159,15 @@ extension BookService {
             return task
         }
     
+    func fetchBookByIsbn(_ isbn: String) async throws -> GetISBNResponse {
+        return try await withCheckedThrowingContinuation { continuation in
+            lookupByISBN(isbn: isbn) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    
     func lookupAuthor(olid: String, completion: @escaping(Result<GetAuthorResponse, NetworkError>) -> Void) -> URLSessionTask {
         let endpoint = GetAuthorEndpoint(olid: olid)
         let task = apiClient.request(from: endpoint) { result in
@@ -182,7 +191,57 @@ extension BookService {
         }
         return task
     }
-            
+    
+    func fetchAuthor(_ olid: String) async throws -> GetAuthorResponse {
+        return try await withCheckedThrowingContinuation { continuation in
+            lookupAuthor(olid: olid) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+    
+    func lookupWork(by olid: String, completion: @escaping(Result<GetWorkResponse, NetworkError>) -> Void) -> URLSessionTask {
+        let endpoint = GetWork(olid: olid)
+        let task = apiClient.request(from: endpoint) { result in
+            switch result {
+            case .success(let data):
+                guard let data else {
+                    completion(.failure(.emptyData))
+                    return
+                }
+                
+                guard let userResponse = self.decodeWork(from: data) else {
+                    completion(.failure(.decodingError("Failed to decode GetWorkResponse")))
+                    return
+                }
+                
+                completion(.success(userResponse))
+                
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+        return task
+    }
+    
+    func fetchWork(by olid: String) async throws -> GetWorkResponse {
+        return try await withCheckedThrowingContinuation { continuation in
+            lookupWork(by: olid) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    private func decodeWork(from data: Data) -> GetWorkResponse? {
+        do {
+            let decoder = JSONDecoder()
+            return try decoder.decode(GetWorkResponse.self, from: data)
+        } catch {
+            print("Failed to decode work: \(error)")
+            return nil
+        }
+    }
+
     private func decodeAuthor(from data: Data) -> GetAuthorResponse? {
         do {
             let decoder = JSONDecoder()
@@ -231,6 +290,14 @@ extension CoverService {
             }
         }
         return task
+    }
+    
+    func fetchCover(_ isbn: String) async throws -> UIImage {
+        return try await withCheckedThrowingContinuation { continuation in
+            lookupByISBN(isbn) { result in
+                continuation.resume(with: result)
+            }
+        }
     }
     
     private func createCover(from data: Data) -> UIImage? {

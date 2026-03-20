@@ -10,6 +10,6 @@ struct GetAuthorEndpoint: Endpoint {
 }
 
 extension GetAuthorEndpoint {
-    var path: String { "/authors/\(olid).json" }
+    var path: String { "\(olid).json" }
     var method: HTTPMethod { .GET }
 }

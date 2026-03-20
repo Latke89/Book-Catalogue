@@ -10,16 +10,16 @@ import UIKit
 struct BookModel {
     let title: String
     let author: String
-    let genres: [String]
+    var genre: [String]
     let image: UIImage
     let isbn: String
-    let status: Status
-    let owned: Bool
+    var status: Status
+    var owned: Bool
     let pageCount: Int
 }
 
-enum Status {
-    case read
-    case toRead
-    case dnf
+enum Status: String {
+    case read = "Read"
+    case toRead = "To Read"
+    case dnf = "Did Not Finish"
 }

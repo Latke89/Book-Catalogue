@@ -40,6 +40,7 @@ class HomeViewController: UIViewController {
         // Do any additional setup after loading the view.
         viewModel.delegate = self
         dataScannerViewController.delegate = self
+        self.title = "Home"
         collectionButton.addTarget(self, action: #selector(collectionButtonTapped), for: .touchUpInside)
         scanButton.addTarget(self, action: #selector(scanButtonTapped), for: .touchUpInside)
     }
@@ -53,10 +54,17 @@ class HomeViewController: UIViewController {
         try? dataScannerViewController.startScanning()
     }
     
+    func navigateToConfirmation(book: BookModel) {
+        let viewModel = ConfirmationViewModel(book: book)
+        let viewController = ConfirmationViewController(viewModel: viewModel)
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+    
     override func loadView() {
         let view = UIView()
         self.view = view
-        view.translatesAutoresizingMaskIntoConstraints = false
+        view.frame = (navigationController?.view.frame)!
+        view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.backgroundColor = .white
         
         var collectionButtonConfiguration = UIButton.Configuration.filled()
@@ -93,6 +101,26 @@ class HomeViewController: UIViewController {
 
 }
 
+extension HomeViewController: HomeViewModelDelegate {
+    func finishedLookingUpBook(book: GetISBNResponse?, error: Error?) {
+        if let book {
+            let alertViewController = UIAlertController(title: nil, message: "Is your book \(book.title)?", preferredStyle: .alert)
+            let positiveAction = UIAlertAction(title: "Yes", style: .default) { _ in
+                self.viewModel.retrieveAsync()
+            }
+            let negativeAction = UIAlertAction(title: "No", style: .destructive)
+            alertViewController.addAction(positiveAction)
+            alertViewController.addAction(negativeAction)
+            self.present(alertViewController, animated: true)
+        }
+        if let error {
+            let alertViewContoller = UIAlertController(title: "Book not found", message: "We could not find your book", preferredStyle: .alert)
+            alertViewContoller.addAction(UIAlertAction(title: "OK", style: .default))
+            self.present(alertViewContoller, animated: true)
+        }
+    }
+}
+
 extension HomeViewController: DataScannerViewControllerDelegate {
     func dataScanner(_ dataScanner: DataScannerViewController, becameUnavailableWithError error: DataScannerViewController.ScanningUnavailable) {
         // handle here the sudden camera scanner unavaliability. Ex: camera permission revoked.
@@ -126,23 +154,4 @@ extension HomeViewController: DataScannerViewControllerDelegate {
     }
 }
 
-extension HomeViewController: HomeViewModelDelegate {
-    func finishedLookingUpBook(book: GetISBNResponse?, error: Error?) {
-        if let book {
-            let alertViewController = UIAlertController(title: nil, message: "Is your book \(book.title)?", preferredStyle: .alert)
-            let positiveAction = UIAlertAction(title: "Yes", style: .default) { _ in
-                self.viewModel.retrieveBookData()
-            }
-            let negativeAction = UIAlertAction(title: "No", style: .destructive)
-            alertViewController.addAction(positiveAction)
-            alertViewController.addAction(negativeAction)
-            self.present(alertViewController, animated: true)
-        }
-        if let error {
-            let alertViewContoller = UIAlertController(title: "Book not found", message: "We could not find your book", preferredStyle: .alert)
-            alertViewContoller.addAction(UIAlertAction(title: "OK", style: .default))
-            self.present(alertViewContoller, animated: true)
-        }
-    }
-}
 
